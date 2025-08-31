@@ -1,83 +1,64 @@
- 
 <!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Feed de TikTok (embeds oficiales)</title>
+  <title>Feed con swipe</title>
   <style>
-    *{box-sizing:border-box}
-    html,body{margin:0;height:100%;background:#000}
-    .feed{height:100vh;overflow:auto;scroll-snap-type:y mandatory}
-    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start;padding:12px}
-    .card{width:clamp(280px, 60vw, 420px); background:#111; border-radius:16px; padding:8px}
-    .nav{position:fixed;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:12px;z-index:10}
-    .btn{border:0;border-radius:999px;padding:.6rem 1rem;background:#ffffff1a;color:#fff;cursor:pointer}
-    .btn:active{transform:scale(.98)}
+    *{margin:0;box-sizing:border-box}
+    body{background:#000;height:100vh;overflow:hidden}
+    .feed{height:100%;display:flex;flex-direction:column;scroll-snap-type:y mandatory;overflow-y:auto}
+    .item{flex:0 0 100%;height:100%;scroll-snap-align:start;display:flex;align-items:center;justify-content:center}
+    video{width:100%;height:100%;object-fit:cover}
   </style>
 </head>
 <body>
   <div class="feed" id="feed">
-    <!-- Reemplazá href con links de tus posts de TikTok -->
-    <section class="item">
-      <div class="card">
-        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@scout2015/video/6718335390845095173" data-video-id="6718335390845095173" style="max-width: 605px; min-width: 325px;">
-          <section> </section>
-        </blockquote>
-      </div>
-    </section>
-
-    <section class="item">
-      <div class="card">
-        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@tiktok/video/7225623797870064897" data-video-id="7225623797870064897" style="max-width: 605px; min-width: 325px;">
-          <section> </section>
-        </blockquote>
-      </div>
-    </section>
-
-    <section class="item">
-      <div class="card">
-        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@nba/video/7362601496763137338" data-video-id="7362601496763137338" style="max-width: 605px; min-width: 325px;">
-          <section> </section>
-        </blockquote>
-      </div>
-    </section>
-  </div>
-
-  <!-- Script oficial de TikTok (requiere internet) -->
-  <script async src="https://www.tiktok.com/embed.js"></script>
-
-  <!-- Navegación simple Next/Prev -->
-  <div class="nav">
-    <button class="btn" id="prev">⬆️ Anterior</button>
-    <button class="btn" id="next">⬇️ Siguientes</button>
+    <section class="item"><video src="video1.mp4" playsinline muted></video></section>
+    <section class="item"><video src="video2.mp4" playsinline muted></video></section>
   </div>
 
   <script>
     const sections = Array.from(document.querySelectorAll('.item'));
+    const videos = sections.map(s=>s.querySelector('video'));
     let current = 0;
-    function go(i){
-      if (i < 0) i = 0;
-      if (i >= sections.length) i = sections.length - 1;
-      current = i;
-      sections[i].scrollIntoView({behavior:'smooth', block:'start'});
+
+    function play(idx){
+      videos.forEach(v=>v.pause());
+      const v = videos[idx];
+      if(v){ v.currentTime=0; v.play(); }
     }
-    document.getElementById('prev').onclick = ()=>go(current-1);
-    document.getElementById('next').onclick = ()=>go(current+1);
 
-    // Actualiza índice según lo visible
-    const io = new IntersectionObserver(entries=>{
-      entries.forEach(e=>{
-        if (e.isIntersecting) current = sections.indexOf(e.target);
+    // autoplay al terminar
+    videos.forEach((v,idx)=>{
+      v.addEventListener('ended', ()=>{
+        current = (idx+1)%videos.length;
+        sections[current].scrollIntoView({behavior:'smooth'});
+        setTimeout(()=>play(current),400);
       });
-    }, {threshold: 0.6});
-    sections.forEach(s=>io.observe(s));
-
-    // Soporte flechas ↑/↓
-    window.addEventListener('keydown', (e)=>{
-      if (e.key === 'ArrowDown') { e.preventDefault(); go(current+1); }
-      if (e.key === 'ArrowUp') { e.preventDefault(); go(current-1); }
     });
+
+    // swipe táctil
+    let startY=0;
+    document.getElementById('feed').addEventListener('touchstart', e=>{
+      startY=e.touches[0].clientY;
+    });
+    document.getElementById('feed').addEventListener('touchend', e=>{
+      let endY=e.changedTouches[0].clientY;
+      let diff=startY-endY;
+      if(Math.abs(diff)>50){
+        if(diff>0){ // swipe arriba
+          current = Math.min(current+1, videos.length-1);
+        } else { // swipe abajo
+          current = Math.max(current-1, 0);
+        }
+        sections[current].scrollIntoView({behavior:'smooth'});
+        setTimeout(()=>play(current),400);
+      }
+    });
+
+    // iniciar primer video
+    window.addEventListener('load', ()=>play(0));
   </script>
 </body>
 </html>
