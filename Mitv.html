@@ -2,66 +2,74 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Simulador estilo TikTok (con botones)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
+  <title>Simulador TikTok + Embeds</title>
   <style>
     *{box-sizing:border-box}
     html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Arial}
-    .feed{height:100vh;overflow:auto;scroll-snap-type:y mandatory}
-    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start}
-    video{width:100%;height:100vh;object-fit:cover;background:#000}
+    .feed{height:100vh;overflow:auto;scroll-snap-type:y mandatory;scrollbar-width:none}
+    .feed::-webkit-scrollbar{display:none}
+    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start;position:relative;padding:0 10px}
+    video, .tiktok-wrap{width:100%;height:100vh;object-fit:cover;background:#000;display:block}
 
-    /* Overlay de controles */
-    .controls{position:fixed;inset:0;pointer-events:none}
-    .stack-right{
-      position:absolute;right:12px;top:50%;transform:translateY(-50%);
-      display:flex;flex-direction:column;gap:14px;pointer-events:auto;
-    }
-    .bigbtn{
-      width:64px;height:64px;border-radius:999px;border:none;cursor:pointer;
-      background:#ffffff2a;color:#fff;font-size:28px;backdrop-filter: blur(6px);
-    }
+    /* Controles */
+    .controls{position:fixed;inset:0;pointer-events:none;padding-bottom:env(safe-area-inset-bottom)}
+    .stack-right{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;pointer-events:auto;}
+    .bigbtn{width:64px;height:64px;border-radius:999px;border:none;cursor:pointer;background:#ffffff2a;color:#fff;font-size:28px;backdrop-filter: blur(6px);display:flex;align-items:center;justify-content:center;user-select:none}
     .bigbtn:active{transform:scale(.98)}
+    .bar-bottom{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:10px;pointer-events:auto;flex-wrap:wrap;padding:0 12px}
+    .chip,.toggle,.ctrl{border:0;border-radius:999px;cursor:pointer;padding:.55rem .9rem;background:#ffffff20;color:#fff}
+    .chip.active{background:#ffffff;color:#000;font-weight:600}
+    .toggle.on{background:#fff;color:#000;font-weight:600}
+    .disabled{opacity:.45;pointer-events:none}
 
-    .bar-bottom{
-      position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:10px;pointer-events:auto
-    }
-    .chip, .toggle, .ctrl{
-      border:0;border-radius:999px;cursor:pointer;padding:.55rem .9rem;background:#ffffff20;color:#fff
-    }
-    .chip.active{background:#ffffff; color:#000; font-weight:600}
-    .ctrl, .toggle{display:flex;align-items:center;gap:.4rem}
-    .ctrl:active, .toggle:active{transform:scale(.98)}
-
-    /* Pantalla de inicio para habilitar autoplay en móviles */
     .gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:10}
     .gate button{font-size:1rem;padding:.9rem 1.2rem;border-radius:999px;border:0;background:#fff;color:#000;cursor:pointer}
+
+    .progress{position:absolute;left:12px;right:12px;bottom:64px;height:6px;border-radius:999px;background:#ffffff30;pointer-events:auto}
+    .progress .fill{height:100%;width:0;border-radius:999px;background:#fff}
+    .time{position:absolute;left:12px;bottom:40px;font-size:.8rem;background:#000a;padding:.2rem .5rem;border-radius:6px}
+    .toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#000a;padding:.35rem .7rem;border-radius:999px;font-size:.85rem;pointer-events:none;opacity:0;transition:opacity .2s}
   </style>
 </head>
 <body>
-  <!-- Gate: primer toque para permitir autoplay -->
+  <!-- Gate: primer toque para autoplay en móvil -->
   <div class="gate" id="gate">
     <button id="start">▶️ Iniciar simulador</button>
   </div>
 
-  <!-- Feed de 2 videos (duplicá <section> para agregar más) -->
+  <!-- Feed: puedes mezclar <video> y TikTok embebidos -->
   <div class="feed" id="feed">
+    <!-- Ejemplo MP4 local (opcional) -->
     <section class="item"><video src="video1.mp4" playsinline muted preload="metadata"></video></section>
+
+    <!-- Tus TikTok (usamos oEmbed oficial) -->
+    <section class="item">
+      <div class="tiktok-wrap" data-tiktok="https://vm.tiktok.com/ZMA61uufF/"></div>
+    </section>
+    <section class="item">
+      <div class="tiktok-wrap" data-tiktok="https://vm.tiktok.com/ZMA613KNM/"></div>
+    </section>
+
+    <!-- Otro MP4 (opcional) -->
     <section class="item"><video src="video2.mp4" playsinline muted preload="metadata"></video></section>
   </div>
 
-  <!-- Controles visibles -->
+  <!-- Controles -->
   <div class="controls">
-    <!-- Botones grandes: anterior / siguiente -->
+    <div class="toast" id="toast">Listo</div>
+
     <div class="stack-right">
       <button class="bigbtn" id="btnPrev" aria-label="Anterior">⬆️</button>
       <button class="bigbtn" id="btnNext" aria-label="Siguiente">⬇️</button>
     </div>
 
-    <!-- Barra inferior: play/pause, mute, velocidad, autoplay -->
+    <div class="progress" id="progress"><div class="fill" id="progressFill"></div></div>
+    <div class="time" id="timeLabel">0:00 / 0:00</div>
+
     <div class="bar-bottom">
-      <button class="ctrl" id="btnPlay"><span>⏯️</span><span>Play/Pausa</span></button>
-      <button class="toggle" id="btnMute"><span>🔇</span><span>Mute</span></button>
+      <button class="ctrl" id="btnPlay">⏯️ Play/Pausa</button>
+      <button class="toggle" id="btnMute">🔇 Mute</button>
 
       <div style="display:flex;gap:6px">
         <button class="chip" data-rate="0.5">0.5×</button>
@@ -70,9 +78,12 @@
         <button class="chip" data-rate="2">2×</button>
       </div>
 
-      <button class="toggle" id="btnAuto"><span>🔁</span><span>Auto siguiente</span></button>
+      <button class="toggle" id="btnAuto">🔁 Auto siguiente</button>
     </div>
   </div>
+
+  <!-- SDK oficial TikTok (necesario para render del embed) -->
+  <script async src="https://www.tiktok.com/embed.js"></script>
 
   <script>
     const sections = Array.from(document.querySelectorAll('.item'));
@@ -84,112 +95,201 @@
     const btnAuto = document.getElementById('btnAuto');
     const rateChips = Array.from(document.querySelectorAll('.chip'));
     const gate = document.getElementById('gate');
+    const toast = document.getElementById('toast');
+    const progress = document.getElementById('progress');
+    const progressFill = document.getElementById('progressFill');
+    const timeLabel = document.getElementById('timeLabel');
+
     let current = 0;
     let userStarted = false;
     let autoplayNext = true;
     let currentRate = 1;
+    let rafId = null;
+
+    // Render dinámico de TikTok usando oEmbed (para que alcance con tu URL)
+    async function renderTikToks(){
+      const items = Array.from(document.querySelectorAll('.tiktok-wrap'));
+      for (const el of items){
+        const url = el.getAttribute('data-tiktok');
+        try {
+          const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
+          const data = await res.json();
+          // oEmbed devuelve HTML (blockquote + iframe); lo insertamos
+          el.innerHTML = data.html;
+          // Forzamos fondo negro y tamaño responsivo
+          el.style.background = '#000';
+        } catch {
+          el.innerHTML = `<div style="color:#fff;text-align:center;padding:20px">No se pudo cargar el TikTok. <a href="${url}" target="_blank" rel="noopener">Abrir</a></div>`;
+        }
+      }
+      // El SDK procesa los blockquotes insertados
+      if (window.tiktokEmbedLoaded && typeof window.tiktokEmbedLoaded === 'function'){
+        window.tiktokEmbedLoaded();
+      }
+    }
+
+    function isVideo(idx=current){
+      return !!sections[idx].querySelector('video');
+    }
+
+    function setControlsState(){
+      const videoMode = isVideo();
+      // Habilita/Deshabilita controles que no aplican a TikTok
+      [btnPlay, btnMute, ...rateChips, progress].forEach(el=>{
+        el.classList.toggle('disabled', !videoMode);
+      });
+      timeLabel.style.opacity = videoMode ? '1' : '.35';
+    }
+
+    function fmt(t){
+      if (!isFinite(t)) return '0:00';
+      const m = Math.floor(t/60);
+      const s = Math.floor(t%60).toString().padStart(2,'0');
+      return `${m}:${s}`;
+    }
+
+    function toastMsg(msg){
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      setTimeout(()=> toast.style.opacity='0', 900);
+    }
 
     function go(i){
       if (i < 0) i = 0;
       if (i >= sections.length) i = sections.length - 1;
       current = i;
-      sections[i].scrollIntoView({behavior:'smooth', block:'start'});
-      // esperar a que llegue visualmente y reproducir
-      setTimeout(()=> userStarted && playVisible(i), 300);
+      sections[i].scrollIntoView({behavior:'smooth'});
+      setTimeout(()=> userStarted && playVisible(i), 200);
+      setControlsState();
     }
 
     async function playVisible(idx=current){
-      // Pausar todos para que no queden dos sonando
-      videos.forEach(v => v.pause());
-      const v = videos[idx];
-      if (!v) return;
-      // aplicar estado actual
+      // Pausar todos los <video>
+      videos.forEach(v => v && v.pause());
+      const v = sections[idx].querySelector('video');
+      if (!v) { // Es un TikTok (iframe) → sin control programático
+        cancelAnimationFrame(rafId);
+        progressFill.style.width = '0%';
+        timeLabel.textContent = '0:00 / 0:00';
+        return;
+      }
       v.playbackRate = currentRate;
-      v.muted = btnMute.classList.contains('on'); // on = mute activo
+      v.muted = btnMute.classList.contains('on');
       try { await v.play(); } catch {}
+      cancelAnimationFrame(rafId);
+      const loop = ()=>{
+        if (!v.duration || !isFinite(v.duration)){
+          progressFill.style.width = '0%';
+          timeLabel.textContent = `${fmt(v.currentTime)} / 0:00`;
+        } else {
+          const pct = (v.currentTime / v.duration) * 100;
+          progressFill.style.width = pct + '%';
+          timeLabel.textContent = `${fmt(v.currentTime)} / ${fmt(v.duration)}`;
+        }
+        rafId = requestAnimationFrame(loop);
+      };
+      rafId = requestAnimationFrame(loop);
     }
 
-    // Fin de video: pasar al siguiente (con loop)
+    // Auto siguiente al terminar <video>
     videos.forEach((v, idx)=>{
+      if (!v) return;
       v.addEventListener('ended', ()=>{
         if (!autoplayNext) return;
-        const next = (idx + 1) % videos.length; // loop
+        const next = (idx + 1) % sections.length;
         go(next);
       });
-      // Tap al video para play/pausa rápido
-      v.addEventListener('click', async ()=>{
+      v.addEventListener('click', ()=>{
         userStarted = true;
-        if (v.paused) await v.play(); else v.pause();
+        v.paused ? v.play() : v.pause();
+      });
+      progress.addEventListener('click', e=>{
+        if (!isVideo()) return;
+        const rect = progress.getBoundingClientRect();
+        const frac = (e.clientX - rect.left)/rect.width;
+        if (isFinite(v.duration)) v.currentTime = Math.max(0, Math.min(frac,1)) * v.duration;
       });
     });
 
-    // Saber qué sección está visible (si el usuario hace scroll manual)
+    // Observador para actualizar "current" por scroll manual
     const io = new IntersectionObserver(entries=>{
       entries.forEach(e=>{
         if (e.isIntersecting){
-          const idx = sections.indexOf(e.target);
-          current = idx;
+          current = sections.indexOf ? sections.indexOf(e.target) : sections.findIndex(s=>s===e.target);
+          if (userStarted) playVisible(current);
+          setControlsState();
         }
       });
     }, {threshold: 0.6});
     sections.forEach(s=>io.observe(s));
 
-    // Botones grandes
-    btnPrev.onclick = ()=> go(current - 1);
-    btnNext.onclick = ()=> go(current + 1);
+    // Gestos táctiles básicos (swipe vertical)
+    let startY=0, startX=0, moved=false;
+    window.addEventListener('touchstart', e=>{ const t=e.touches[0]; startY=t.clientY; startX=t.clientX; moved=false; }, {passive:true});
+    window.addEventListener('touchmove', ()=>{ moved=true; }, {passive:true});
+    window.addEventListener('touchend', e=>{
+      if (!moved) return;
+      const t=e.changedTouches[0];
+      const dy=t.clientY-startY, dx=t.clientX-startX;
+      if (Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>40){
+        dy<0 ? go(current+1) : go(current-1);
+      }
+    }, {passive:true});
 
-    // Play/Pausa del visible
-    btnPlay.onclick = async ()=>{
+    // Botones
+    btnPrev.onclick = ()=> go(current-1);
+    btnNext.onclick = ()=> go(current+1);
+    btnPlay.onclick = ()=>{
+      if (!isVideo()) return;
       userStarted = true;
-      const v = videos[current];
-      if (!v) return;
-      if (v.paused) await v.play(); else v.pause();
+      const v = sections[current].querySelector('video');
+      if (v) v.paused ? v.play() : v.pause();
     };
-
-    // Mute toggle (estado se guarda en clase .on)
     btnMute.onclick = ()=>{
+      if (!isVideo()) return;
       btnMute.classList.toggle('on');
-      const v = videos[current];
-      if (v){ v.muted = btnMute.classList.contains('on'); }
-      // actualizar icono/texto opcionalmente
+      const v = sections[current].querySelector('video');
+      if (v) v.muted = btnMute.classList.contains('on');
+      toastMsg(v && v.muted ? 'Mute activado' : 'Sonido activado');
     };
-
-    // Velocidad
     rateChips.forEach(ch=>{
       ch.onclick = ()=>{
+        if (!isVideo()) return;
         rateChips.forEach(c=>c.classList.remove('active'));
         ch.classList.add('active');
         currentRate = parseFloat(ch.dataset.rate || '1');
-        const v = videos[current];
+        const v = sections[current].querySelector('video');
         if (v) v.playbackRate = currentRate;
+        toastMsg(`${currentRate}×`);
       };
     });
-
-    // Autoplay siguiente
     btnAuto.onclick = ()=>{
       autoplayNext = !autoplayNext;
       btnAuto.classList.toggle('on', autoplayNext);
+      toastMsg(autoplayNext ? 'Auto siguiente: ON' : 'Auto siguiente: OFF');
     };
 
-    // Gate de inicio (habilita autoplay en móviles)
+    // Gate inicio
     document.getElementById('start').onclick = async ()=>{
       userStarted = true;
       gate.style.display = 'none';
-      // por defecto: mute activado para asegurar autoplay
-      btnMute.classList.add('on');
-      await playVisible(current);
+      btnMute.classList.add('on'); // asegura autoplay en móvil
+      await renderTikToks();       // renderiza tus dos TikTok
+      playVisible(current);
+      setControlsState();
     };
 
-    // Reanudar si vuelven a la pestaña
+    // Reanudar al volver a la pestaña
     document.addEventListener('visibilitychange', ()=>{
       if (!document.hidden && userStarted) playVisible(current);
     });
 
-    // Atajos de teclado (opcional en PC)
-    window.addEventListener('keydown', (e)=>{
-      if (e.key === 'ArrowDown') { e.preventDefault(); go(current+1); }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); go(current-1); }
-      if (e.key === ' ')         { e.preventDefault(); btnPlay.click(); }
+    // Atajos PC
+    window.addEventListener('keydown', e=>{
+      if (e.key==='ArrowDown'){ e.preventDefault(); go(current+1); }
+      if (e.key==='ArrowUp'){   e.preventDefault(); go(current-1); }
+      if (e.key===' '){         e.preventDefault(); btnPlay.click(); }
+      if (e.key==='m'){         e.preventDefault(); btnMute.click(); }
     });
   </script>
 </body>
