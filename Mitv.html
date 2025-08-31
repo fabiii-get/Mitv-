@@ -1,1 +1,83 @@
 
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Feed de TikTok (embeds oficiales)</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:#000}
+    .feed{height:100vh;overflow:auto;scroll-snap-type:y mandatory}
+    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start;padding:12px}
+    .card{width:clamp(280px, 60vw, 420px); background:#111; border-radius:16px; padding:8px}
+    .nav{position:fixed;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:12px;z-index:10}
+    .btn{border:0;border-radius:999px;padding:.6rem 1rem;background:#ffffff1a;color:#fff;cursor:pointer}
+    .btn:active{transform:scale(.98)}
+  </style>
+</head>
+<body>
+  <div class="feed" id="feed">
+    <!-- Reemplazá href con links de tus posts de TikTok -->
+    <section class="item">
+      <div class="card">
+        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@scout2015/video/6718335390845095173" data-video-id="6718335390845095173" style="max-width: 605px; min-width: 325px;">
+          <section> </section>
+        </blockquote>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="card">
+        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@tiktok/video/7225623797870064897" data-video-id="7225623797870064897" style="max-width: 605px; min-width: 325px;">
+          <section> </section>
+        </blockquote>
+      </div>
+    </section>
+
+    <section class="item">
+      <div class="card">
+        <blockquote class="tiktok-embed" cite="https://www.tiktok.com/@nba/video/7362601496763137338" data-video-id="7362601496763137338" style="max-width: 605px; min-width: 325px;">
+          <section> </section>
+        </blockquote>
+      </div>
+    </section>
+  </div>
+
+  <!-- Script oficial de TikTok (requiere internet) -->
+  <script async src="https://www.tiktok.com/embed.js"></script>
+
+  <!-- Navegación simple Next/Prev -->
+  <div class="nav">
+    <button class="btn" id="prev">⬆️ Anterior</button>
+    <button class="btn" id="next">⬇️ Siguiente</button>
+  </div>
+
+  <script>
+    const sections = Array.from(document.querySelectorAll('.item'));
+    let current = 0;
+    function go(i){
+      if (i < 0) i = 0;
+      if (i >= sections.length) i = sections.length - 1;
+      current = i;
+      sections[i].scrollIntoView({behavior:'smooth', block:'start'});
+    }
+    document.getElementById('prev').onclick = ()=>go(current-1);
+    document.getElementById('next').onclick = ()=>go(current+1);
+
+    // Actualiza índice según lo visible
+    const io = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if (e.isIntersecting) current = sections.indexOf(e.target);
+      });
+    }, {threshold: 0.6});
+    sections.forEach(s=>io.observe(s));
+
+    // Soporte flechas ↑/↓
+    window.addEventListener('keydown', (e)=>{
+      if (e.key === 'ArrowDown') { e.preventDefault(); go(current+1); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); go(current-1); }
+    });
+  </script>
+</body>
+</html>
