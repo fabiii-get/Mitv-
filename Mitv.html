@@ -3,62 +3,194 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Feed con swipe</title>
+  <title>Simulador estilo TikTok (con botones)</title>
   <style>
-    *{margin:0;box-sizing:border-box}
-    body{background:#000;height:100vh;overflow:hidden}
-    .feed{height:100%;display:flex;flex-direction:column;scroll-snap-type:y mandatory;overflow-y:auto}
-    .item{flex:0 0 100%;height:100%;scroll-snap-align:start;display:flex;align-items:center;justify-content:center}
-    video{width:100%;height:100%;object-fit:cover}
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Arial}
+    .feed{height:100vh;overflow:auto;scroll-snap-type:y mandatory}
+    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start}
+    video{width:100%;height:100vh;object-fit:cover;background:#000}
+
+    /* Overlay de controles */
+    .controls{position:fixed;inset:0;pointer-events:none}
+    .stack-right{
+      position:absolute;right:12px;top:50%;transform:translateY(-50%);
+      display:flex;flex-direction:column;gap:14px;pointer-events:auto;
+    }
+    .bigbtn{
+      width:64px;height:64px;border-radius:999px;border:none;cursor:pointer;
+      background:#ffffff2a;color:#fff;font-size:28px;backdrop-filter: blur(6px);
+    }
+    .bigbtn:active{transform:scale(.98)}
+
+    .bar-bottom{
+      position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:10px;pointer-events:auto
+    }
+    .chip, .toggle, .ctrl{
+      border:0;border-radius:999px;cursor:pointer;padding:.55rem .9rem;background:#ffffff20;color:#fff
+    }
+    .chip.active{background:#ffffff; color:#000; font-weight:600}
+    .ctrl, .toggle{display:flex;align-items:center;gap:.4rem}
+    .ctrl:active, .toggle:active{transform:scale(.98)}
+
+    /* Pantalla de inicio para habilitar autoplay en móviles */
+    .gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:10}
+    .gate button{font-size:1rem;padding:.9rem 1.2rem;border-radius:999px;border:0;background:#fff;color:#000;cursor:pointer}
   </style>
 </head>
 <body>
+  <!-- Gate: primer toque para permitir autoplay -->
+  <div class="gate" id="gate">
+    <button id="start">▶️ Iniciar simulador</button>
+  </div>
+
+  <!-- Feed de 2 videos (duplicá <section> para agregar más) -->
   <div class="feed" id="feed">
-    <section class="item"><video src="video1.mp4" playsinline muted></video></section>
-    <section class="item"><video src="video2.mp4" playsinline muted></video></section>
+    <section class="item"><video src="video1.mp4" playsinline muted preload="metadata"></video></section>
+    <section class="item"><video src="video2.mp4" playsinline muted preload="metadata"></video></section>
+  </div>
+
+  <!-- Controles visibles -->
+  <div class="controls">
+    <!-- Botones grandes: anterior / siguiente -->
+    <div class="stack-right">
+      <button class="bigbtn" id="btnPrev" aria-label="Anterior">⬆️</button>
+      <button class="bigbtn" id="btnNext" aria-label="Siguiente">⬇️</button>
+    </div>
+
+    <!-- Barra inferior: play/pause, mute, velocidad, autoplay -->
+    <div class="bar-bottom">
+      <button class="ctrl" id="btnPlay"><span>⏯️</span><span>Play/Pausa</span></button>
+      <button class="toggle" id="btnMute"><span>🔇</span><span>Mute</span></button>
+
+      <div style="display:flex;gap:6px">
+        <button class="chip" data-rate="0.5">0.5×</button>
+        <button class="chip active" data-rate="1">1×</button>
+        <button class="chip" data-rate="1.5">1.5×</button>
+        <button class="chip" data-rate="2">2×</button>
+      </div>
+
+      <button class="toggle" id="btnAuto"><span>🔁</span><span>Auto siguiente</span></button>
+    </div>
   </div>
 
   <script>
     const sections = Array.from(document.querySelectorAll('.item'));
-    const videos = sections.map(s=>s.querySelector('video'));
+    const videos = sections.map(s => s.querySelector('video'));
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnMute = document.getElementById('btnMute');
+    const btnAuto = document.getElementById('btnAuto');
+    const rateChips = Array.from(document.querySelectorAll('.chip'));
+    const gate = document.getElementById('gate');
     let current = 0;
+    let userStarted = false;
+    let autoplayNext = true;
+    let currentRate = 1;
 
-    function play(idx){
-      videos.forEach(v=>v.pause());
-      const v = videos[idx];
-      if(v){ v.currentTime=0; v.play(); }
+    function go(i){
+      if (i < 0) i = 0;
+      if (i >= sections.length) i = sections.length - 1;
+      current = i;
+      sections[i].scrollIntoView({behavior:'smooth', block:'start'});
+      // esperar a que llegue visualmente y reproducir
+      setTimeout(()=> userStarted && playVisible(i), 300);
     }
 
-    // autoplay al terminar
-    videos.forEach((v,idx)=>{
+    async function playVisible(idx=current){
+      // Pausar todos para que no queden dos sonando
+      videos.forEach(v => v.pause());
+      const v = videos[idx];
+      if (!v) return;
+      // aplicar estado actual
+      v.playbackRate = currentRate;
+      v.muted = btnMute.classList.contains('on'); // on = mute activo
+      try { await v.play(); } catch {}
+    }
+
+    // Fin de video: pasar al siguiente (con loop)
+    videos.forEach((v, idx)=>{
       v.addEventListener('ended', ()=>{
-        current = (idx+1)%videos.length;
-        sections[current].scrollIntoView({behavior:'smooth'});
-        setTimeout(()=>play(current),400);
+        if (!autoplayNext) return;
+        const next = (idx + 1) % videos.length; // loop
+        go(next);
+      });
+      // Tap al video para play/pausa rápido
+      v.addEventListener('click', async ()=>{
+        userStarted = true;
+        if (v.paused) await v.play(); else v.pause();
       });
     });
 
-    // swipe táctil
-    let startY=0;
-    document.getElementById('feed').addEventListener('touchstart', e=>{
-      startY=e.touches[0].clientY;
-    });
-    document.getElementById('feed').addEventListener('touchend', e=>{
-      let endY=e.changedTouches[0].clientY;
-      let diff=startY-endY;
-      if(Math.abs(diff)>50){
-        if(diff>0){ // swipe arriba
-          current = Math.min(current+1, videos.length-1);
-        } else { // swipe abajo
-          current = Math.max(current-1, 0);
+    // Saber qué sección está visible (si el usuario hace scroll manual)
+    const io = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if (e.isIntersecting){
+          const idx = sections.indexOf(e.target);
+          current = idx;
         }
-        sections[current].scrollIntoView({behavior:'smooth'});
-        setTimeout(()=>play(current),400);
-      }
+      });
+    }, {threshold: 0.6});
+    sections.forEach(s=>io.observe(s));
+
+    // Botones grandes
+    btnPrev.onclick = ()=> go(current - 1);
+    btnNext.onclick = ()=> go(current + 1);
+
+    // Play/Pausa del visible
+    btnPlay.onclick = async ()=>{
+      userStarted = true;
+      const v = videos[current];
+      if (!v) return;
+      if (v.paused) await v.play(); else v.pause();
+    };
+
+    // Mute toggle (estado se guarda en clase .on)
+    btnMute.onclick = ()=>{
+      btnMute.classList.toggle('on');
+      const v = videos[current];
+      if (v){ v.muted = btnMute.classList.contains('on'); }
+      // actualizar icono/texto opcionalmente
+    };
+
+    // Velocidad
+    rateChips.forEach(ch=>{
+      ch.onclick = ()=>{
+        rateChips.forEach(c=>c.classList.remove('active'));
+        ch.classList.add('active');
+        currentRate = parseFloat(ch.dataset.rate || '1');
+        const v = videos[current];
+        if (v) v.playbackRate = currentRate;
+      };
     });
 
-    // iniciar primer video
-    window.addEventListener('load', ()=>play(0));
+    // Autoplay siguiente
+    btnAuto.onclick = ()=>{
+      autoplayNext = !autoplayNext;
+      btnAuto.classList.toggle('on', autoplayNext);
+    };
+
+    // Gate de inicio (habilita autoplay en móviles)
+    document.getElementById('start').onclick = async ()=>{
+      userStarted = true;
+      gate.style.display = 'none';
+      // por defecto: mute activado para asegurar autoplay
+      btnMute.classList.add('on');
+      await playVisible(current);
+    };
+
+    // Reanudar si vuelven a la pestaña
+    document.addEventListener('visibilitychange', ()=>{
+      if (!document.hidden && userStarted) playVisible(current);
+    });
+
+    // Atajos de teclado (opcional en PC)
+    window.addEventListener('keydown', (e)=>{
+      if (e.key === 'ArrowDown') { e.preventDefault(); go(current+1); }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); go(current-1); }
+      if (e.key === ' ')         { e.preventDefault(); btnPlay.click(); }
+    });
   </script>
 </body>
 </html>
