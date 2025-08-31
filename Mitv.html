@@ -3,135 +3,100 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover" />
-  <title>Simuladores TikTok + Embeds</title>
+  <title>Simulador TikTok (Embeds que funcionan)</title>
   <style>
     *{box-sizing:border-box}
     html,body{margin:0;height:100%;background:#000;color:#fff;font-family:system-ui,Arial}
     .feed{height:100vh;overflow:auto;scroll-snap-type:y mandatory;scrollbar-width:none}
     .feed::-webkit-scrollbar{display:none}
-    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start;position:relative;padding:0 10px}
-    video, .tiktok-wrap{width:100%;height:100vh;object-fit:cover;background:#000;display:block}
-
-    /* Controles */
-    .controls{position:fixed;inset:0;pointer-events:none;padding-bottom:env(safe-area-inset-bottom)}
-    .stack-right{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px;pointer-events:auto;}
-    .bigbtn{width:64px;height:64px;border-radius:999px;border:none;cursor:pointer;background:#ffffff2a;color:#fff;font-size:28px;backdrop-filter: blur(6px);display:flex;align-items:center;justify-content:center;user-select:none}
+    .item{display:flex;justify-content:center;align-items:center;height:100vh;scroll-snap-align:start;padding:0 10px}
+    .wrap{width:100%;max-width:500px;margin:0 auto}
+    .stack-right{position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:14px}
+    .bigbtn{width:64px;height:64px;border-radius:999px;border:none;cursor:pointer;background:#ffffff2a;color:#fff;font-size:28px;backdrop-filter: blur(6px)}
     .bigbtn:active{transform:scale(.98)}
-    .bar-bottom{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:10px;pointer-events:auto;flex-wrap:wrap;padding:0 12px}
-    .chip,.toggle,.ctrl{border:0;border-radius:999px;cursor:pointer;padding:.55rem .9rem;background:#ffffff20;color:#fff}
-    .chip.active{background:#ffffff;color:#000;font-weight:600}
-    .toggle.on{background:#fff;color:#000;font-weight:600}
-    .disabled{opacity:.45;pointer-events:none}
-
     .gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;z-index:10}
     .gate button{font-size:1rem;padding:.9rem 1.2rem;border-radius:999px;border:0;background:#fff;color:#000;cursor:pointer}
-
-    .progress{position:absolute;left:12px;right:12px;bottom:64px;height:6px;border-radius:999px;background:#ffffff30;pointer-events:auto}
-    .progress .fill{height:100%;width:0;border-radius:999px;background:#fff}
-    .time{position:absolute;left:12px;bottom:40px;font-size:.8rem;background:#000a;padding:.2rem .5rem;border-radius:6px}
-    .toast{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:#000a;padding:.35rem .7rem;border-radius:999px;font-size:.85rem;pointer-events:none;opacity:0;transition:opacity .2s}
   </style>
 </head>
 <body>
-  <!-- Gate: primer toque para autoplay en móvil -->
+  <!-- Gate para primer toque en móvil -->
   <div class="gate" id="gate">
-    <button id="start">▶️ Iniciar simulador</button>
+    <button id="start">▶️ Iniciar</button>
   </div>
 
-  <!-- Feed: puedes mezclar <video> y TikTok embebidos -->
   <div class="feed" id="feed">
-    <!-- Ejemplo MP4 local (opcional) -->
-    <section class="item"><video src="video1.mp4" playsinline muted preload="metadata"></video></section>
-
-    <!-- Tus TikTok (usamos oEmbed oficial) -->
     <section class="item">
-      <div class="tiktok-wrap" data-tiktok="https://vm.tiktok.com/ZMA61uufF/"></div>
-    </section>
-    <section class="item">
-      <div class="tiktok-wrap" data-tiktok="https://vm.tiktok.com/ZMA613KNM/"></div>
-    </section>
-
-    <!-- Otro MP4 (opcional) -->
-    <section class="item"><video src="video2.mp4" playsinline muted preload="metadata"></video></section>
-  </div>
-
-  <!-- Controles -->
-  <div class="controls">
-    <div class="toast" id="toast">Listo</div>
-
-    <div class="stack-right">
-      <button class="bigbtn" id="btnPrev" aria-label="Anterior">⬆️</button>
-      <button class="bigbtn" id="btnNext" aria-label="Siguiente">⬇️</button>
-    </div>
-
-    <div class="progress" id="progress"><div class="fill" id="progressFill"></div></div>
-    <div class="time" id="timeLabel">0:00 / 0:00</div>
-
-    <div class="bar-bottom">
-      <button class="ctrl" id="btnPlay">⏯️ Play/Pausa</button>
-      <button class="toggle" id="btnMute">🔇 Mute</button>
-
-      <div style="display:flex;gap:6px">
-        <button class="chip" data-rate="0.5">0.5×</button>
-        <button class="chip active" data-rate="1">1×</button>
-        <button class="chip" data-rate="1.5">1.5×</button>
-        <button class="chip" data-rate="2">2×</button>
+      <div class="wrap">
+        <!-- Reemplaza URL_TIKTOK_1 por la URL larga con /@usuario/video/ID -->
+        <blockquote class="tiktok-embed" cite="URL_TIKTOK_1" data-video-id="" style="background:#000" >
+          <section> <a href="URL_TIKTOK_1"></a> </section>
+        </blockquote>
       </div>
+    </section>
 
-      <button class="toggle" id="btnAuto">🔁 Auto siguiente</button>
-    </div>
+    <section class="item">
+      <div class="wrap">
+        <!-- Reemplaza URL_TIKTOK_2 por la URL larga con /@usuario/video/ID -->
+        <blockquote class="tiktok-embed" cite="URL_TIKTOK_2" data-video-id="" style="background:#000">
+          <section> <a href="URL_TIKTOK_2"></a> </section>
+        </blockquote>
+      </div>
+    </section>
   </div>
 
-  <!-- SDK oficial TikTok (necesario para render del embed) -->
+  <!-- Botones arriba/abajo -->
+  <div class="stack-right">
+    <button class="bigbtn" id="btnPrev" aria-label="Anterior">⬆️</button>
+    <button class="bigbtn" id="btnNext" aria-label="Siguiente">⬇️</button>
+  </div>
+
+  <!-- SDK oficial (debe ir después de los blockquotes) -->
   <script async src="https://www.tiktok.com/embed.js"></script>
 
   <script>
     const sections = Array.from(document.querySelectorAll('.item'));
-    const videos = sections.map(s => s.querySelector('video'));
     const btnPrev = document.getElementById('btnPrev');
     const btnNext = document.getElementById('btnNext');
-    const btnPlay = document.getElementById('btnPlay');
-    const btnMute = document.getElementById('btnMute');
-    const btnAuto = document.getElementById('btnAuto');
-    const rateChips = Array.from(document.querySelectorAll('.chip'));
     const gate = document.getElementById('gate');
-    const toast = document.getElementById('toast');
-    const progress = document.getElementById('progress');
-    const progressFill = document.getElementById('progressFill');
-    const timeLabel = document.getElementById('timeLabel');
+    let current = 0, started = false;
 
-    let current = 0;
-    let userStarted = false;
-    let autoplayNext = true;
-    let currentRate = 1;
-    let rafId = null;
+    function go(i){
+      if (i<0) i=0;
+      if (i>=sections.length) i=sections.length-1;
+      current = i;
+      sections[i].scrollIntoView({behavior:'smooth', block:'start'});
+    }
 
-    // Render dinámico de TikTok usando oEmbed (para que alcance con tu URL)
-    async function renderTikToks(){
-      const items = Array.from(document.querySelectorAll('.tiktok-wrap'));
-      for (const el of items){
-        const url = el.getAttribute('data-tiktok');
-        try {
-          const res = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`);
-          const data = await res.json();
-          // oEmbed devuelve HTML (blockquote + iframe); lo insertamos
-          el.innerHTML = data.html;
-          // Forzamos fondo negro y tamaño responsivo
-          el.style.background = '#000';
-        } catch {
-          el.innerHTML = `<div style="color:#fff;text-align:center;padding:20px">No se pudo cargar el TikTok. <a href="${url}" target="_blank" rel="noopener">Abrir</a></div>`;
+    // Gestos swipe vertical
+    let startY=0, startX=0, moved=false;
+    window.addEventListener('touchstart', e=>{ const t=e.touches[0]; startY=t.clientY; startX=t.clientX; moved=false; }, {passive:true});
+    window.addEventListener('touchmove', ()=>{ moved=true; }, {passive:true});
+    window.addEventListener('touchend', e=>{
+      if (!moved) return;
+      const t=e.changedTouches[0]; const dy=t.clientY-startY, dx=t.clientX-startX;
+      if (Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>40){ dy<0? go(current+1) : go(current-1); }
+    }, {passive:true});
+
+    btnPrev.onclick = ()=> go(current-1);
+    btnNext.onclick = ()=> go(current+1);
+
+    document.getElementById('start').onclick = ()=>{
+      started = true;
+      gate.style.display = 'none';
+    };
+
+    // Actualiza "current" cuando el usuario hace scroll manual
+    const io = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if (e.isIntersecting){
+          current = sections.findIndex(s=>s===e.target);
         }
-      }
-      // El SDK procesa los blockquotes insertados
-      if (window.tiktokEmbedLoaded && typeof window.tiktokEmbedLoaded === 'function'){
-        window.tiktokEmbedLoaded();
-      }
-    }
-
-    function isVideo(idx=current){
-      return !!sections[idx].querySelector('video');
-    }
-
+      });
+    }, {threshold:0.6});
+    sections.forEach(s=>io.observe(s));
+  </script>
+</body>
+</html>
     function setControlsState(){
       const videoMode = isVideo();
       // Habilita/Deshabilita controles que no aplican a TikTok
